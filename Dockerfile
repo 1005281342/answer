@@ -10,12 +10,13 @@ RUN make install-ui-packages ui && mv ui/build /tmp
 FROM golang:1.19-alpine AS golang-builder
 LABEL maintainer="aichy@sf.com"
 
-ARG GOPROXY
-ENV GOPROXY ${GOPROXY:-direct}
+#ARG GOPROXY
+#ENV GOPROXY ${GOPROXY:-direct}
+ENV GOPROXY https://goproxy.cn,direct
 
 ENV GOPATH /go
 ENV GOROOT /usr/local/go
-ENV PACKAGE github.com/answerdev/answer
+ENV PACKAGE github.com/1005281342/answer
 ENV BUILD_DIR ${GOPATH}/src/${PACKAGE}
 
 ARG TAGS="sqlite sqlite_unlock_notify"

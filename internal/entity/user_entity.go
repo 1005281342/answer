@@ -28,7 +28,7 @@ type User struct {
 	Username       string    `xorm:"not null default '' VARCHAR(50) UNIQUE username"`
 	Pass           string    `xorm:"not null default '' VARCHAR(255) pass"`
 	EMail          string    `xorm:"not null VARCHAR(100) e_mail"`
-	MailStatus     int       `xorm:"not null default 2 TINYINT(4) mail_status"`
+	MailStatus     int       `xorm:"not null default 1 TINYINT(4) mail_status"` // 2: 未验证 1: 已验证
 	NoticeStatus   int       `xorm:"not null default 2 INT(11) notice_status"`
 	FollowCount    int       `xorm:"not null default 0 INT(11) follow_count"`
 	AnswerCount    int       `xorm:"not null default 0 INT(11) answer_count"`

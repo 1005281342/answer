@@ -35,8 +35,11 @@ clean:
 	@rm -f $(BIN)
 
 install-ui-packages:
-	@corepack enable
-	@corepack prepare pnpm@v7.12.2 --activate
+#	@corepack enable
+#	@corepack prepare pnpm@v7.12.2 --activate
+	@npm install -g cnpm --registry=https://registry.npm.taobao.org
+	@cnpm install pnpm -g
+
 
 ui:
 	@npm config set registry https://repo.huaweicloud.com/repository/npm/

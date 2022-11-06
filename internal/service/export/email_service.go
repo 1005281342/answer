@@ -86,6 +86,9 @@ type TestTemplateData struct {
 
 // Send email send
 func (es *EmailService) Send(ctx context.Context, toEmailAddr, subject, body, code, codeContent string) {
+	// 暂时关闭邮箱认证，不发送到目的邮箱中
+	return
+
 	log.Infof("try to send email to %s", toEmailAddr)
 	ec, err := es.GetEmailConfig()
 	if err != nil {

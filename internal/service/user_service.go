@@ -307,7 +307,7 @@ func (us *UserService) UserRegisterByEmail(ctx context.Context, registerUserInfo
 		return nil, err
 	}
 	userInfo.IPInfo = registerUserInfo.IP
-	userInfo.MailStatus = entity.EmailStatusToBeVerified
+	userInfo.MailStatus = entity.EmailStatusAvailable // 暂时关闭邮箱认证，默认已确认
 	userInfo.Status = entity.UserStatusAvailable
 	err = us.userRepo.AddUser(ctx, userInfo)
 	if err != nil {
