@@ -7,19 +7,21 @@ import (
 	"time"
 
 	"github.com/answerdev/answer/internal/base/constant"
-	"github.com/answerdev/answer/internal/service/activity"
-	"github.com/answerdev/answer/internal/service/activity_common"
-	"github.com/answerdev/answer/internal/service/notice_queue"
-	"github.com/answerdev/answer/internal/service/revision_common"
-
 	"github.com/answerdev/answer/internal/base/reason"
 	"github.com/answerdev/answer/internal/entity"
 	"github.com/answerdev/answer/internal/schema"
+	"github.com/answerdev/answer/internal/service/activity"
+	"github.com/answerdev/answer/internal/service/activity_common"
+	"github.com/answerdev/answer/internal/service/activity_queue"
 	answercommon "github.com/answerdev/answer/internal/service/answer_common"
 	collectioncommon "github.com/answerdev/answer/internal/service/collection_common"
+	"github.com/answerdev/answer/internal/service/export"
+	"github.com/answerdev/answer/internal/service/notice_queue"
 	"github.com/answerdev/answer/internal/service/permission"
 	questioncommon "github.com/answerdev/answer/internal/service/question_common"
+	"github.com/answerdev/answer/internal/service/revision_common"
 	usercommon "github.com/answerdev/answer/internal/service/user_common"
+	"github.com/answerdev/answer/pkg/encryption"
 	"github.com/segmentfault/pacman/errors"
 	"github.com/segmentfault/pacman/log"
 )
@@ -36,6 +38,7 @@ type AnswerService struct {
 	revisionService       *revision_common.RevisionService
 	AnswerCommon          *answercommon.AnswerCommon
 	voteRepo              activity_common.VoteRepo
+	emailService          *export.EmailService
 }
 
 func NewAnswerService(
@@ -49,6 +52,7 @@ func NewAnswerService(
 	answerAcceptActivityRepo *activity.AnswerActivityService,
 	answerCommon *answercommon.AnswerCommon,
 	voteRepo activity_common.VoteRepo,
+	emailService *export.EmailService,
 ) *AnswerService {
 	return &AnswerService{
 		answerRepo:            answerRepo,
@@ -61,17 +65,42 @@ func NewAnswerService(
 		answerActivityService: answerAcceptActivityRepo,
 		AnswerCommon:          answerCommon,
 		voteRepo:              voteRepo,
+		emailService:          emailService,
 	}
 }
 
 // RemoveAnswer delete answer
-func (as *AnswerService) RemoveAnswer(ctx context.Context, id string) (err error) {
-	answerInfo, exist, err := as.answerRepo.GetByID(ctx, id)
+func (as *AnswerService) RemoveAnswer(ctx context.Context, req *schema.RemoveAnswerReq) (err error) {
+	answerInfo, exist, err := as.answerRepo.GetByID(ctx, req.ID)
 	if err != nil {
 		return err
 	}
 	if !exist {
 		return nil
+	}
+	if !req.IsAdmin {
+		if answerInfo.UserID != req.UserID {
+			return errors.BadRequest(reason.AnswerCannotDeleted)
+		}
+		if answerInfo.VoteCount > 0 {
+			return errors.BadRequest(reason.AnswerCannotDeleted)
+		}
+		if answerInfo.Accepted == schema.AnswerAcceptedEnable {
+			return errors.BadRequest(reason.AnswerCannotDeleted)
+		}
+		questionInfo, exist, err := as.questionRepo.GetQuestion(ctx, answerInfo.QuestionID)
+		if err != nil {
+			return errors.BadRequest(reason.AnswerCannotDeleted)
+		}
+		if !exist {
+			return errors.BadRequest(reason.AnswerCannotDeleted)
+		}
+		if questionInfo.AnswerCount > 1 {
+			return errors.BadRequest(reason.AnswerCannotDeleted)
+		}
+		if questionInfo.AcceptedAnswerID != "" {
+			return errors.BadRequest(reason.AnswerCannotDeleted)
+		}
 	}
 
 	// user add question count
@@ -85,7 +114,7 @@ func (as *AnswerService) RemoveAnswer(ctx context.Context, id string) (err error
 		log.Error("user IncreaseAnswerCount error", err.Error())
 	}
 
-	err = as.answerRepo.RemoveAnswer(ctx, id)
+	err = as.answerRepo.RemoveAnswer(ctx, req.ID)
 	if err != nil {
 		return err
 	}
@@ -93,6 +122,12 @@ func (as *AnswerService) RemoveAnswer(ctx context.Context, id string) (err error
 	if err != nil {
 		log.Errorf("delete answer activity change failed: %s", err.Error())
 	}
+	activity_queue.AddActivity(&schema.ActivityMsg{
+		UserID:           req.UserID,
+		ObjectID:         answerInfo.ID,
+		OriginalObjectID: answerInfo.ID,
+		ActivityTypeKey:  constant.ActAnswerDeleted,
+	})
 	return
 }
 
@@ -104,16 +139,16 @@ func (as *AnswerService) Insert(ctx context.Context, req *schema.AnswerAddReq) (
 	if !exist {
 		return "", errors.BadRequest(reason.QuestionNotFound)
 	}
-	now := time.Now()
 	insertData := new(entity.Answer)
 	insertData.UserID = req.UserID
 	insertData.OriginalText = req.Content
 	insertData.ParsedText = req.HTML
-	insertData.Adopted = schema.AnswerAdoptedFailed
+	insertData.Accepted = schema.AnswerAcceptedFailed
 	insertData.QuestionID = req.QuestionID
 	insertData.RevisionID = "0"
+	insertData.LastEditUserID = "0"
 	insertData.Status = entity.AnswerStatusAvailable
-	insertData.UpdatedAt = now
+	//insertData.UpdatedAt = now
 	if err = as.answerRepo.AddAnswer(ctx, insertData); err != nil {
 		return "", err
 	}
@@ -142,15 +177,41 @@ func (as *AnswerService) Insert(ctx context.Context, req *schema.AnswerAddReq) (
 	}
 	infoJSON, _ := json.Marshal(insertData)
 	revisionDTO.Content = string(infoJSON)
-	err = as.revisionService.AddRevision(ctx, revisionDTO, true)
+	revisionID, err := as.revisionService.AddRevision(ctx, revisionDTO, true)
 	if err != nil {
 		return insertData.ID, err
 	}
-	as.notificationAnswerTheQuestion(ctx, questionInfo.UserID, insertData.ID, req.UserID)
+	as.notificationAnswerTheQuestion(ctx, questionInfo.UserID, questionInfo.ID, insertData.ID, req.UserID, questionInfo.Title,
+		insertData.OriginalText)
+
+	activity_queue.AddActivity(&schema.ActivityMsg{
+		UserID:           insertData.UserID,
+		ObjectID:         insertData.ID,
+		OriginalObjectID: insertData.ID,
+		ActivityTypeKey:  constant.ActAnswerAnswered,
+		RevisionID:       revisionID,
+	})
+	activity_queue.AddActivity(&schema.ActivityMsg{
+		UserID:           insertData.UserID,
+		ObjectID:         insertData.ID,
+		OriginalObjectID: questionInfo.ID,
+		ActivityTypeKey:  constant.ActQuestionAnswered,
+	})
 	return insertData.ID, nil
 }
 
 func (as *AnswerService) Update(ctx context.Context, req *schema.AnswerUpdateReq) (string, error) {
+	//req.NoNeedReview //true 不需要审核
+	var canUpdate bool
+	_, existUnreviewed, err := as.revisionService.ExistUnreviewedByObjectID(ctx, req.ID)
+	if err != nil {
+		return "", err
+	}
+	if existUnreviewed {
+		err = errors.BadRequest(reason.AnswerCannotUpdate)
+		return "", err
+	}
+
 	questionInfo, exist, err := as.questionRepo.GetQuestion(ctx, req.QuestionID)
 	if err != nil {
 		return "", err
@@ -158,39 +219,80 @@ func (as *AnswerService) Update(ctx context.Context, req *schema.AnswerUpdateReq
 	if !exist {
 		return "", errors.BadRequest(reason.QuestionNotFound)
 	}
+
+	answerInfo, exist, err := as.answerRepo.GetByID(ctx, req.ID)
+	if err != nil {
+		return "", err
+	}
+	if !exist {
+		return "", nil
+	}
+
+	//If the content is the same, ignore it
+	if answerInfo.OriginalText == req.Content {
+		return "", nil
+	}
+
 	now := time.Now()
 	insertData := new(entity.Answer)
 	insertData.ID = req.ID
+	insertData.UserID = answerInfo.UserID
 	insertData.QuestionID = req.QuestionID
-	insertData.UserID = req.UserID
 	insertData.OriginalText = req.Content
 	insertData.ParsedText = req.HTML
 	insertData.UpdatedAt = now
-	if err = as.answerRepo.UpdateAnswer(ctx, insertData, []string{"original_text", "parsed_text", "update_time"}); err != nil {
-		return "", err
+
+	insertData.LastEditUserID = "0"
+	if answerInfo.UserID != req.UserID {
+		insertData.LastEditUserID = req.UserID
 	}
-	err = as.questionCommon.UpdataPostTime(ctx, req.QuestionID)
-	if err != nil {
-		return insertData.ID, err
-	}
+
 	revisionDTO := &schema.AddRevisionDTO{
 		UserID:   req.UserID,
 		ObjectID: req.ID,
 		Title:    "",
 		Log:      req.EditSummary,
 	}
+
+	if req.NoNeedReview || answerInfo.UserID == req.UserID {
+		canUpdate = true
+	}
+
+	if !canUpdate {
+		revisionDTO.Status = entity.RevisionUnreviewedStatus
+	} else {
+		if err = as.answerRepo.UpdateAnswer(ctx, insertData, []string{"original_text", "parsed_text", "updated_at", "last_edit_user_id"}); err != nil {
+			return "", err
+		}
+		err = as.questionCommon.UpdataPostTime(ctx, req.QuestionID)
+		if err != nil {
+			return insertData.ID, err
+		}
+		as.notificationUpdateAnswer(ctx, questionInfo.UserID, insertData.ID, req.UserID)
+		revisionDTO.Status = entity.RevisionReviewPassStatus
+	}
+
 	infoJSON, _ := json.Marshal(insertData)
 	revisionDTO.Content = string(infoJSON)
-	err = as.revisionService.AddRevision(ctx, revisionDTO, true)
+	revisionID, err := as.revisionService.AddRevision(ctx, revisionDTO, true)
 	if err != nil {
 		return insertData.ID, err
 	}
-	as.notificationUpdateAnswer(ctx, questionInfo.UserID, insertData.ID, req.UserID)
+	if canUpdate {
+		activity_queue.AddActivity(&schema.ActivityMsg{
+			UserID:           insertData.UserID,
+			ObjectID:         insertData.ID,
+			OriginalObjectID: insertData.ID,
+			ActivityTypeKey:  constant.ActAnswerEdited,
+			RevisionID:       revisionID,
+		})
+	}
+
 	return insertData.ID, nil
 }
 
-// UpdateAdopted
-func (as *AnswerService) UpdateAdopted(ctx context.Context, req *schema.AnswerAdoptedReq) error {
+// UpdateAccepted
+func (as *AnswerService) UpdateAccepted(ctx context.Context, req *schema.AnswerAcceptedReq) error {
 	if req.AnswerID == "" {
 		req.AnswerID = "0"
 	}
@@ -234,7 +336,7 @@ func (as *AnswerService) UpdateAdopted(ctx context.Context, req *schema.AnswerAd
 		}
 	}
 
-	err = as.answerRepo.UpdateAdopted(ctx, req.AnswerID, req.QuestionID)
+	err = as.answerRepo.UpdateAccepted(ctx, req.AnswerID, req.QuestionID)
 	if err != nil {
 		return err
 	}
@@ -254,14 +356,14 @@ func (as *AnswerService) updateAnswerRank(ctx context.Context, userID string,
 	// if this question is already been answered, should cancel old answer rank
 	if oldAnswerInfo != nil {
 		err := as.answerActivityService.CancelAcceptAnswer(
-			ctx, questionInfo.AcceptedAnswerID, questionInfo.UserID, oldAnswerInfo.UserID)
+			ctx, questionInfo.AcceptedAnswerID, questionInfo.ID, questionInfo.UserID, oldAnswerInfo.UserID)
 		if err != nil {
 			log.Error(err)
 		}
 	}
 	if newAnswerInfo.ID != "" {
 		err := as.answerActivityService.AcceptAnswer(
-			ctx, newAnswerInfo.ID, questionInfo.UserID, newAnswerInfo.UserID, newAnswerInfo.UserID == userID)
+			ctx, newAnswerInfo.ID, questionInfo.ID, questionInfo.UserID, newAnswerInfo.UserID, newAnswerInfo.UserID == userID)
 		if err != nil {
 			log.Error(err)
 		}
@@ -280,13 +382,22 @@ func (as *AnswerService) Get(ctx context.Context, answerID, loginUserID string) 
 		return nil, nil, has, err
 	}
 	// todo UserFunc
-	userinfo, has, err := as.userCommon.GetUserBasicInfoByID(ctx, answerInfo.UserID)
+
+	userIds := make([]string, 0)
+	userIds = append(userIds, answerInfo.UserID)
+	userIds = append(userIds, answerInfo.LastEditUserID)
+	userInfoMap, err := as.userCommon.BatchUserBasicInfoByID(ctx, userIds)
 	if err != nil {
 		return nil, nil, has, err
 	}
-	if has {
-		info.UserInfo = userinfo
-		info.UpdateUserInfo = userinfo
+
+	_, ok := userInfoMap[answerInfo.UserID]
+	if ok {
+		info.UserInfo = userInfoMap[answerInfo.UserID]
+	}
+	_, ok = userInfoMap[answerInfo.LastEditUserID]
+	if ok {
+		info.UpdateUserInfo = userInfoMap[answerInfo.LastEditUserID]
 	}
 
 	if loginUserID == "" {
@@ -299,7 +410,7 @@ func (as *AnswerService) Get(ctx context.Context, answerID, loginUserID string) 
 	if err != nil {
 		log.Error("CollectionFunc.SearchObjectCollected error", err)
 	}
-	_, ok := CollectedMap[answerInfo.ID]
+	_, ok = CollectedMap[answerInfo.ID]
 	if ok {
 		info.Collected = true
 	}
@@ -307,12 +418,12 @@ func (as *AnswerService) Get(ctx context.Context, answerID, loginUserID string) 
 	return info, questionInfo, has, nil
 }
 
-func (as *AnswerService) AdminSetAnswerStatus(ctx context.Context, answerID string, setStatusStr string) error {
-	setStatus, ok := entity.CmsAnswerSearchStatus[setStatusStr]
+func (as *AnswerService) AdminSetAnswerStatus(ctx context.Context, req *schema.AdminSetAnswerStatusRequest) error {
+	setStatus, ok := entity.AdminAnswerSearchStatus[req.StatusStr]
 	if !ok {
 		return fmt.Errorf("question status does not exist")
 	}
-	answerInfo, exist, err := as.answerRepo.GetAnswer(ctx, answerID)
+	answerInfo, exist, err := as.answerRepo.GetAnswer(ctx, req.AnswerID)
 	if err != nil {
 		return err
 	}
@@ -326,9 +437,16 @@ func (as *AnswerService) AdminSetAnswerStatus(ctx context.Context, answerID stri
 	}
 
 	if setStatus == entity.AnswerStatusDeleted {
-		err = as.answerActivityService.DeleteQuestion(ctx, answerInfo.ID, answerInfo.CreatedAt, answerInfo.VoteCount)
+		err = as.answerActivityService.DeleteAnswer(ctx, answerInfo.ID, answerInfo.CreatedAt, answerInfo.VoteCount)
 		if err != nil {
 			log.Errorf("admin delete question then rank rollback error %s", err.Error())
+		} else {
+			activity_queue.AddActivity(&schema.ActivityMsg{
+				UserID:           req.UserID,
+				ObjectID:         answerInfo.ID,
+				OriginalObjectID: answerInfo.ID,
+				ActivityTypeKey:  constant.ActAnswerDeleted,
+			})
 		}
 	}
 
@@ -344,39 +462,40 @@ func (as *AnswerService) AdminSetAnswerStatus(ctx context.Context, answerID stri
 	return nil
 }
 
-func (as *AnswerService) SearchList(ctx context.Context, search *schema.AnswerList) ([]*schema.AnswerInfo, int64, error) {
+func (as *AnswerService) SearchList(ctx context.Context, req *schema.AnswerListReq) ([]*schema.AnswerInfo, int64, error) {
 	list := make([]*schema.AnswerInfo, 0)
 	dbSearch := entity.AnswerSearch{}
-	dbSearch.QuestionID = search.QuestionID
-	dbSearch.Page = search.Page
-	dbSearch.PageSize = search.PageSize
-	dbSearch.Order = search.Order
-	dblist, count, err := as.answerRepo.SearchList(ctx, &dbSearch)
+	dbSearch.QuestionID = req.QuestionID
+	dbSearch.Page = req.Page
+	dbSearch.PageSize = req.PageSize
+	dbSearch.Order = req.Order
+	answerOriginalList, count, err := as.answerRepo.SearchList(ctx, &dbSearch)
 	if err != nil {
 		return list, count, err
 	}
-	AnswerList, err := as.SearchFormatInfo(ctx, dblist, search.LoginUserID)
+	answerList, err := as.SearchFormatInfo(ctx, answerOriginalList, req)
 	if err != nil {
-		return AnswerList, count, err
+		return answerList, count, err
 	}
-	return AnswerList, count, nil
+	return answerList, count, nil
 }
 
-func (as *AnswerService) SearchFormatInfo(ctx context.Context, dblist []*entity.Answer, loginUserID string) ([]*schema.AnswerInfo, error) {
+func (as *AnswerService) SearchFormatInfo(ctx context.Context, answers []*entity.Answer, req *schema.AnswerListReq) (
+	[]*schema.AnswerInfo, error) {
 	list := make([]*schema.AnswerInfo, 0)
-	objectIds := make([]string, 0)
-	userIds := make([]string, 0)
-	for _, dbitem := range dblist {
-		item := as.ShowFormat(ctx, dbitem)
+	objectIDs := make([]string, 0)
+	userIDs := make([]string, 0)
+	for _, info := range answers {
+		item := as.ShowFormat(ctx, info)
 		list = append(list, item)
-		objectIds = append(objectIds, dbitem.ID)
-		userIds = append(userIds, dbitem.UserID)
-		if loginUserID != "" {
-			// item.VoteStatus = as.activityFunc.GetVoteStatus(ctx, item.TagID, loginUserId)
-			item.VoteStatus = as.voteRepo.GetVoteStatus(ctx, item.ID, loginUserID)
+		objectIDs = append(objectIDs, info.ID)
+		userIDs = append(userIDs, info.UserID)
+		userIDs = append(userIDs, info.LastEditUserID)
+		if req.UserID != "" {
+			item.VoteStatus = as.voteRepo.GetVoteStatus(ctx, item.ID, req.UserID)
 		}
 	}
-	userInfoMap, err := as.userCommon.BatchUserBasicInfoByID(ctx, userIds)
+	userInfoMap, err := as.userCommon.BatchUserBasicInfoByID(ctx, userIDs)
 	if err != nil {
 		return list, err
 	}
@@ -384,30 +503,32 @@ func (as *AnswerService) SearchFormatInfo(ctx context.Context, dblist []*entity.
 		_, ok := userInfoMap[item.UserID]
 		if ok {
 			item.UserInfo = userInfoMap[item.UserID]
-			item.UpdateUserInfo = userInfoMap[item.UserID]
+		}
+		_, ok = userInfoMap[item.UpdateUserID]
+		if ok {
+			item.UpdateUserInfo = userInfoMap[item.UpdateUserID]
 		}
 	}
 
-	if loginUserID == "" {
+	if req.UserID == "" {
 		return list, nil
 	}
 
-	CollectedMap, err := as.collectionCommon.SearchObjectCollected(ctx, loginUserID, objectIds)
+	searchObjectCollected, err := as.collectionCommon.SearchObjectCollected(ctx, req.UserID, objectIDs)
 	if err != nil {
-		log.Error("CollectionFunc.SearchObjectCollected error", err)
+		return nil, err
 	}
 
 	for _, item := range list {
-		_, ok := CollectedMap[item.ID]
+		_, ok := searchObjectCollected[item.ID]
 		if ok {
 			item.Collected = true
 		}
 	}
 
 	for _, item := range list {
-		item.MemberActions = permission.GetAnswerPermission(loginUserID, item.UserID)
+		item.MemberActions = permission.GetAnswerPermission(ctx, req.UserID, item.UserID, req.CanEdit, req.CanDelete)
 	}
-
 	return list, nil
 }
 
@@ -427,7 +548,12 @@ func (as *AnswerService) notificationUpdateAnswer(ctx context.Context, questionU
 	notice_queue.AddNotification(msg)
 }
 
-func (as *AnswerService) notificationAnswerTheQuestion(ctx context.Context, questionUserID, answerID, answerUserID string) {
+func (as *AnswerService) notificationAnswerTheQuestion(ctx context.Context,
+	questionUserID, questionID, answerID, answerUserID, questionTitle, answerSummary string) {
+	// If the question is answered by me, there is no notification for myself.
+	if questionUserID == answerUserID {
+		return
+	}
 	msg := &schema.NotificationMsg{
 		TriggerUserID:  answerUserID,
 		ReceiverUserID: questionUserID,
@@ -437,4 +563,43 @@ func (as *AnswerService) notificationAnswerTheQuestion(ctx context.Context, ques
 	msg.ObjectType = constant.AnswerObjectType
 	msg.NotificationAction = constant.AnswerTheQuestion
 	notice_queue.AddNotification(msg)
+
+	userInfo, exist, err := as.userRepo.GetByUserID(ctx, questionUserID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !exist {
+		log.Warnf("user %s not found", questionUserID)
+		return
+	}
+	if userInfo.NoticeStatus == schema.NoticeStatusOff || len(userInfo.EMail) == 0 {
+		return
+	}
+
+	rawData := &schema.NewAnswerTemplateRawData{
+		QuestionTitle:   questionTitle,
+		QuestionID:      questionID,
+		AnswerID:        answerID,
+		AnswerSummary:   answerSummary,
+		UnsubscribeCode: encryption.MD5(userInfo.Pass),
+	}
+	answerUser, _, _ := as.userCommon.GetUserBasicInfoByID(ctx, answerUserID)
+	if answerUser != nil {
+		rawData.AnswerUserDisplayName = answerUser.DisplayName
+	}
+	codeContent := &schema.EmailCodeContent{
+		SourceType: schema.UnsubscribeSourceType,
+		Email:      userInfo.EMail,
+		UserID:     userInfo.ID,
+	}
+
+	title, body, err := as.emailService.NewAnswerTemplate(ctx, rawData)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	go as.emailService.SendAndSaveCodeWithTime(
+		ctx, userInfo.EMail, title, body, rawData.UnsubscribeCode, codeContent.ToJSONString(), 7*24*time.Hour)
 }

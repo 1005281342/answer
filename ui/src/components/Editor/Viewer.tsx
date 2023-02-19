@@ -7,31 +7,39 @@ import {
   useImperativeHandle,
 } from 'react';
 
-import { marked } from 'marked';
+import { markdownToHtml } from '@/services';
+import { htmlToReact } from '@/utils';
 
 import { htmlRender } from './utils';
 
 let scrollTop = 0;
+let renderTimer;
 
 const Index = ({ value }, ref) => {
   const [html, setHtml] = useState('');
-
   const previewRef = useRef<HTMLDivElement>(null);
 
+  const renderMarkdown = (markdown) => {
+    clearTimeout(renderTimer);
+    const timeout = renderTimer ? 1000 : 0;
+    renderTimer = setTimeout(() => {
+      markdownToHtml(markdown).then((resp) => {
+        scrollTop = previewRef.current?.scrollTop || 0;
+        setHtml(resp);
+      });
+    }, timeout);
+  };
   useEffect(() => {
-    const previewHtml = marked(value).replace(
-      /<img/gi,
-      '<img referrerpolicy="no-referrer"',
-    );
-    scrollTop = previewRef.current?.scrollTop || 0;
-    setHtml(previewHtml);
+    renderMarkdown(value);
   }, [value]);
+
   useEffect(() => {
     if (!html) {
       return;
     }
 
     previewRef.current?.scrollTo(0, scrollTop);
+
     htmlRender(previewRef.current);
   }, [html]);
   useImperativeHandle(ref, () => {
@@ -43,9 +51,9 @@ const Index = ({ value }, ref) => {
   return (
     <div
       ref={previewRef}
-      className="preview-wrap position-relative p-3 bg-light rounded text-break text-wrap mt-2 fmt"
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+      className="preview-wrap position-relative p-3 bg-light rounded text-break text-wrap mt-2 fmt">
+      {htmlToReact(html)}
+    </div>
   );
 };
 

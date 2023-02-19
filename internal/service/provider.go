@@ -3,11 +3,13 @@ package service
 import (
 	"github.com/answerdev/answer/internal/service/action"
 	"github.com/answerdev/answer/internal/service/activity"
+	"github.com/answerdev/answer/internal/service/activity_common"
 	answercommon "github.com/answerdev/answer/internal/service/answer_common"
 	"github.com/answerdev/answer/internal/service/auth"
 	collectioncommon "github.com/answerdev/answer/internal/service/collection_common"
 	"github.com/answerdev/answer/internal/service/comment"
 	"github.com/answerdev/answer/internal/service/comment_common"
+	"github.com/answerdev/answer/internal/service/dashboard"
 	"github.com/answerdev/answer/internal/service/export"
 	"github.com/answerdev/answer/internal/service/follow"
 	"github.com/answerdev/answer/internal/service/meta"
@@ -18,13 +20,17 @@ import (
 	"github.com/answerdev/answer/internal/service/rank"
 	"github.com/answerdev/answer/internal/service/reason"
 	"github.com/answerdev/answer/internal/service/report"
-	"github.com/answerdev/answer/internal/service/report_backyard"
-	"github.com/answerdev/answer/internal/service/report_handle_backyard"
+	"github.com/answerdev/answer/internal/service/report_admin"
+	"github.com/answerdev/answer/internal/service/report_handle_admin"
 	"github.com/answerdev/answer/internal/service/revision_common"
+	"github.com/answerdev/answer/internal/service/role"
+	"github.com/answerdev/answer/internal/service/search_parser"
+	"github.com/answerdev/answer/internal/service/siteinfo"
+	"github.com/answerdev/answer/internal/service/siteinfo_common"
 	"github.com/answerdev/answer/internal/service/tag"
 	tagcommon "github.com/answerdev/answer/internal/service/tag_common"
 	"github.com/answerdev/answer/internal/service/uploader"
-	"github.com/answerdev/answer/internal/service/user_backyard"
+	"github.com/answerdev/answer/internal/service/user_admin"
 	usercommon "github.com/answerdev/answer/internal/service/user_common"
 	"github.com/google/wire"
 )
@@ -54,15 +60,23 @@ var ProviderSetService = wire.NewSet(
 	revision_common.NewRevisionService,
 	NewRevisionService,
 	rank.NewRankService,
+	search_parser.NewSearchParser,
 	NewSearchService,
 	meta.NewMetaService,
 	object_info.NewObjService,
-	report_handle_backyard.NewReportHandle,
-	report_backyard.NewReportBackyardService,
-	user_backyard.NewUserBackyardService,
+	report_handle_admin.NewReportHandle,
+	report_admin.NewReportAdminService,
+	user_admin.NewUserAdminService,
 	reason.NewReasonService,
-	NewSiteInfoService,
+	siteinfo_common.NewSiteInfoCommonService,
+	siteinfo.NewSiteInfoService,
 	notficationcommon.NewNotificationCommon,
 	notification.NewNotificationService,
 	activity.NewAnswerActivityService,
+	dashboard.NewDashboardService,
+	activity_common.NewActivityCommon,
+	activity.NewActivityService,
+	role.NewRoleService,
+	role.NewUserRoleRelService,
+	role.NewRolePowerRelService,
 )

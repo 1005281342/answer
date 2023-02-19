@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { uniqBy } from 'lodash';
 
-import * as Types from '@answer/common/interface';
+import * as Types from '@/common/interface';
 
 let globalUsers: Types.PageUser[] = [];
 const usePageUsers = () => {
@@ -14,6 +14,9 @@ const usePageUsers = () => {
     getUsers,
     setUsers: (data: Types.PageUser | Types.PageUser[]) => {
       if (data instanceof Array) {
+        if (data.length === 0) {
+          return;
+        }
         setUsers(uniqBy([...users, ...data], 'userName'));
         globalUsers = uniqBy([...globalUsers, ...data], 'userName');
       } else {

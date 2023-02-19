@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,51 +8,67 @@ import (
 	"github.com/answerdev/answer/configs"
 	"github.com/answerdev/answer/i18n"
 	"github.com/answerdev/answer/pkg/dir"
+	"github.com/answerdev/answer/pkg/writer"
 )
 
 const (
-	DefaultConfigFileName = "config.yaml"
+	DefaultConfigFileName                  = "config.yaml"
+	DefaultCacheFileName                   = "cache.db"
+	DefaultReservedUsernamesConfigFileName = "reserved-usernames.json"
 )
 
 var (
-	ConfigFilePath = "/conf/"
-	UploadFilePath = "/upfiles/"
+	ConfigFileDir  = "/conf/"
+	UploadFilePath = "/uploads/"
 	I18nPath       = "/i18n/"
+	CacheDir       = "/cache/"
 )
+
+// GetConfigFilePath get config file path
+func GetConfigFilePath() string {
+	return filepath.Join(ConfigFileDir, DefaultConfigFileName)
+}
+
+func FormatAllPath(dataDirPath string) {
+	ConfigFileDir = filepath.Join(dataDirPath, ConfigFileDir)
+	UploadFilePath = filepath.Join(dataDirPath, UploadFilePath)
+	I18nPath = filepath.Join(dataDirPath, I18nPath)
+	CacheDir = filepath.Join(dataDirPath, CacheDir)
+}
 
 // InstallAllInitialEnvironment install all initial environment
 func InstallAllInitialEnvironment(dataDirPath string) {
-	ConfigFilePath = filepath.Join(dataDirPath, ConfigFilePath)
-	UploadFilePath = filepath.Join(dataDirPath, UploadFilePath)
-	I18nPath = filepath.Join(dataDirPath, I18nPath)
-
-	installConfigFile()
+	FormatAllPath(dataDirPath)
 	installUploadDir()
 	installI18nBundle()
+	installReservedUsernames()
 	fmt.Println("install all initial environment done")
 }
 
-func installConfigFile() {
-	fmt.Println("[config-file] try to install...")
-	defaultConfigFile := filepath.Join(ConfigFilePath, DefaultConfigFileName)
+func InstallConfigFile(configFilePath string) error {
+	if len(configFilePath) == 0 {
+		configFilePath = filepath.Join(ConfigFileDir, DefaultConfigFileName)
+	}
+	fmt.Println("[config-file] try to create at ", configFilePath)
 
 	// if config file already exists do nothing.
-	if CheckConfigFile(defaultConfigFile) {
-		fmt.Printf("[config-file] %s already exists\n", defaultConfigFile)
-		return
+	if CheckConfigFile(configFilePath) {
+		fmt.Printf("[config-file] %s already exists\n", configFilePath)
+		return nil
 	}
 
-	if err := dir.CreateDirIfNotExist(ConfigFilePath); err != nil {
+	if err := dir.CreateDirIfNotExist(ConfigFileDir); err != nil {
 		fmt.Printf("[config-file] create directory fail %s\n", err.Error())
-		return
+		return fmt.Errorf("create directory fail %s", err.Error())
 	}
-	fmt.Printf("[config-file] create directory success, config file is %s\n", defaultConfigFile)
+	fmt.Printf("[config-file] create directory success, config file is %s\n", configFilePath)
 
-	if err := writerFile(defaultConfigFile, string(configs.Config)); err != nil {
+	if err := writer.WriteFile(configFilePath, string(configs.Config)); err != nil {
 		fmt.Printf("[config-file] install fail %s\n", err.Error())
-		return
+		return fmt.Errorf("write file failed %s", err)
 	}
 	fmt.Printf("[config-file] install success\n")
+	return nil
 }
 
 func installUploadDir() {
@@ -84,8 +99,14 @@ func installI18nBundle() {
 		if err != nil {
 			continue
 		}
+		if dir.CheckFileExist(path) {
+			fmt.Printf("[i18n] install %s file exist, try to replace it\n", item.Name())
+			if err = os.Remove(path); err != nil {
+				fmt.Println(err)
+			}
+		}
 		fmt.Printf("[i18n] install %s bundle...\n", item.Name())
-		err = writerFile(path, string(content))
+		err = writer.WriteFile(path, string(content))
 		if err != nil {
 			fmt.Printf("[i18n] install %s bundle fail: %s\n", item.Name(), err.Error())
 		} else {
@@ -94,20 +115,15 @@ func installI18nBundle() {
 	}
 }
 
-func writerFile(filePath, content string) error {
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0o666)
-	if err != nil {
-		return err
+func installReservedUsernames() {
+	reservedUsernamesJsonFilePath := filepath.Join(ConfigFileDir, DefaultReservedUsernamesConfigFileName)
+	if !dir.CheckFileExist(reservedUsernamesJsonFilePath) {
+		err := writer.WriteFile(reservedUsernamesJsonFilePath, string(configs.ReservedUsernames))
+		if err != nil {
+			fmt.Printf("[%s] write file fail: %s\n", DefaultReservedUsernamesConfigFileName, err)
+		} else {
+			fmt.Printf("[%s] write file success\n", DefaultReservedUsernamesConfigFileName)
+		}
+		return
 	}
-	defer func() {
-		_ = file.Close()
-	}()
-	writer := bufio.NewWriter(file)
-	if _, err := writer.WriteString(content); err != nil {
-		return err
-	}
-	if err := writer.Flush(); err != nil {
-		return err
-	}
-	return nil
 }

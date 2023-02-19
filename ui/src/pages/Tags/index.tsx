@@ -3,9 +3,11 @@ import { Container, Row, Col, Card, Button, Form } from 'react-bootstrap';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-import { useQueryTags, following } from '@answer/api';
-import { Tag, Pagination, PageTitle, QueryGroup } from '@answer/components';
-import { formatCount } from '@answer/utils';
+import { usePageTags } from '@/hooks';
+import { Tag, Pagination, QueryGroup, TagsLoader } from '@/components';
+import { formatCount } from '@/utils';
+import { tryNormalLogged } from '@/utils/guard';
+import { useQueryTags, following } from '@/services';
 
 const sortBtns = ['popular', 'name', 'newest'];
 
@@ -18,7 +20,11 @@ const Tags = () => {
   const sort = urlSearch.get('sort');
 
   const pageSize = 20;
-  const { data: tags, mutate } = useQueryTags({
+  const {
+    data: tags,
+    mutate,
+    isLoading,
+  } = useQueryTags({
     page,
     page_size: pageSize,
     ...(searchTag ? { slug_name: searchTag } : {}),
@@ -30,6 +36,9 @@ const Tags = () => {
   };
 
   const handleFollow = (tag) => {
+    if (!tryNormalLogged(true)) {
+      return;
+    }
     following({
       object_id: tag.tag_id,
       is_cancel: tag.is_follower,
@@ -37,37 +46,41 @@ const Tags = () => {
       mutate();
     });
   };
+  usePageTags({
+    title: t('tags', { keyPrefix: 'page_title' }),
+  });
   return (
-    <>
-      <PageTitle title={t('tags', { keyPrefix: 'page_title' })} />
-      <Container className="py-3 my-3">
-        <Row className="mb-4 d-flex justify-content-center">
-          <Col xxl={10} sm={12}>
-            <h3 className="mb-4">{t('title')}</h3>
-            <div className="d-flex justify-content-between align-items-center flex-wrap">
-              <Form>
-                <Form.Group controlId="formBasicEmail">
-                  <Form.Control
-                    value={searchTag}
-                    placeholder={t('search_placeholder')}
-                    type="text"
-                    onChange={handleChange}
-                    size="sm"
-                  />
-                </Form.Group>
-              </Form>
-              <QueryGroup
-                data={sortBtns}
-                currentSort={sort || 'popular'}
-                sortKey="sort"
-                i18nKeyPrefix="tags.sort_buttons"
-              />
-            </div>
-          </Col>
+    <Container className="py-3 my-3">
+      <Row className="mb-4 d-flex justify-content-center">
+        <Col xxl={10} sm={12}>
+          <h3 className="mb-4">{t('title')}</h3>
+          <div className="d-flex justify-content-between align-items-center flex-wrap">
+            <Form>
+              <Form.Group controlId="formBasicEmail">
+                <Form.Control
+                  value={searchTag}
+                  placeholder={t('search_placeholder')}
+                  type="text"
+                  onChange={handleChange}
+                  size="sm"
+                />
+              </Form.Group>
+            </Form>
+            <QueryGroup
+              data={sortBtns}
+              currentSort={sort || 'popular'}
+              sortKey="sort"
+              i18nKeyPrefix="tags.sort_buttons"
+            />
+          </div>
+        </Col>
 
-          <Col className="mt-4" xxl={10} sm={12}>
-            <Row>
-              {tags?.list?.map((tag) => (
+        <Col className="mt-4" xxl={10} sm={12}>
+          <Row>
+            {isLoading ? (
+              <TagsLoader />
+            ) : (
+              tags?.list?.map((tag) => (
                 <Col
                   key={tag.slug_name}
                   xs={12}
@@ -77,10 +90,9 @@ const Tags = () => {
                   className="mb-4">
                   <Card className="h-100">
                     <Card.Body className="d-flex flex-column align-items-start">
-                      <Tag className="mb-3" href={`/tags/${tag.slug_name}`}>
-                        {tag.slug_name}
-                      </Tag>
-                      <p className="fs-14 flex-fill text-break text-wrap text-truncate-4">
+                      <Tag className="mb-3" data={tag} />
+
+                      <p className="fs-14 flex-fill text-break text-wrap text-truncate-3">
                         {tag.original_text}
                       </p>
                       <div className="d-flex align-items-center">
@@ -100,19 +112,19 @@ const Tags = () => {
                     </Card.Body>
                   </Card>
                 </Col>
-              ))}
-            </Row>
-            <div className="d-flex justify-content-center">
-              <Pagination
-                currentPage={page}
-                totalSize={tags?.count || 0}
-                pageSize={pageSize}
-              />
-            </div>
-          </Col>
-        </Row>
-      </Container>
-    </>
+              ))
+            )}
+          </Row>
+          <div className="d-flex justify-content-center">
+            <Pagination
+              currentPage={page}
+              totalSize={tags?.count || 0}
+              pageSize={pageSize}
+            />
+          </div>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 

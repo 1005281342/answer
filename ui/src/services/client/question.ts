@@ -1,8 +1,8 @@
 import useSWR from 'swr';
 import qs from 'qs';
 
-import request from '@answer/utils/request';
-import type * as Type from '@answer/common/interface';
+import request from '@/utils/request';
+import type * as Type from '@/common/interface';
 
 export const useQuestionList = (params: Type.QueryQuestionsReq) => {
   const apiUrl = `/answer/api/v1/question/page?${qs.stringify(params)}`;
@@ -20,7 +20,7 @@ export const useQuestionList = (params: Type.QueryQuestionsReq) => {
 export const useHotQuestions = (
   params: Type.QueryQuestionsReq = {
     page: 1,
-    page_size: 10,
+    page_size: 6,
     order: 'frequent',
   },
 ) => {

@@ -1,7 +1,9 @@
 package schema
 
 import (
+	"github.com/answerdev/answer/internal/base/validator"
 	"github.com/answerdev/answer/internal/entity"
+	"github.com/answerdev/answer/pkg/converter"
 	"github.com/jinzhu/copier"
 )
 
@@ -12,13 +14,24 @@ type AddCommentReq struct {
 	// reply comment id
 	ReplyCommentID string `validate:"omitempty" json:"reply_comment_id"`
 	// original comment content
-	OriginalText string `validate:"required" json:"original_text"`
+	OriginalText string `validate:"required,notblank,gte=2,lte=600" json:"original_text"`
 	// parsed comment content
-	ParsedText string `validate:"required" json:"parsed_text"`
+	ParsedText string `json:"-"`
 	// @ user id list
 	MentionUsernameList []string `validate:"omitempty" json:"mention_username_list"`
 	// user id
 	UserID string `json:"-"`
+	// whether user can add it
+	CanAdd bool `json:"-"`
+	// whether user can edit it
+	CanEdit bool `json:"-"`
+	// whether user can delete it
+	CanDelete bool `json:"-"`
+}
+
+func (req *AddCommentReq) Check() (errFields []*validator.FormErrorField, err error) {
+	req.ParsedText = converter.Markdown2HTML(req.OriginalText)
+	return nil, nil
 }
 
 // RemoveCommentReq remove comment
@@ -34,11 +47,17 @@ type UpdateCommentReq struct {
 	// comment id
 	CommentID string `validate:"required" json:"comment_id"`
 	// original comment content
-	OriginalText string `validate:"omitempty" json:"original_text"`
+	OriginalText string `validate:"required,notblank,gte=2,lte=600" json:"original_text"`
 	// parsed comment content
-	ParsedText string `validate:"omitempty" json:"parsed_text"`
+	ParsedText string `json:"-"`
 	// user id
-	UserID string `json:"-"`
+	UserID  string `json:"-"`
+	IsAdmin bool   `json:"-"`
+}
+
+func (req *UpdateCommentReq) Check() (errFields []*validator.FormErrorField, err error) {
+	req.ParsedText = converter.Markdown2HTML(req.OriginalText)
+	return nil, nil
 }
 
 // GetCommentListReq get comment list all request
@@ -69,10 +88,16 @@ type GetCommentWithPageReq struct {
 	PageSize int `validate:"omitempty,min=1" form:"page_size"`
 	// object id
 	ObjectID string `validate:"required" form:"object_id"`
+	// comment id
+	CommentID string `validate:"omitempty" form:"comment_id"`
 	// query condition
 	QueryCond string `validate:"omitempty,oneof=vote" form:"query_cond"`
 	// user id
 	UserID string `json:"-"`
+	// whether user can edit it
+	CanEdit bool `json:"-"`
+	// whether user can delete it
+	CanDelete bool `json:"-"`
 }
 
 // GetCommentReq get comment list page request
@@ -81,6 +106,10 @@ type GetCommentReq struct {
 	ID string `validate:"required" form:"id"`
 	// user id
 	UserID string `json:"-"`
+	// whether user can edit it
+	CanEdit bool `json:"-"`
+	// whether user can delete it
+	CanDelete bool `json:"-"`
 }
 
 // GetCommentResp comment response

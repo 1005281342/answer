@@ -1,7 +1,7 @@
 version: "3"
 services:
   answer:
-    image: oyjx0525/answer:v1.0.0
+    image: oyjx0525/answer
     ports:
       - '9080:80'
     restart: on-failure
@@ -11,7 +11,7 @@ services:
     links:
       - db
     volumes:
-      - ./answer-data/data:/data
+      - answer-data:/data
     networks:
       answer-network:
         ipv4_address: 172.33.0.4

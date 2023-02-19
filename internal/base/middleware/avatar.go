@@ -2,8 +2,9 @@ package middleware
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/answerdev/answer/internal/service/uploader"
 	"github.com/answerdev/answer/pkg/converter"
 	"github.com/gin-gonic/gin"
+	"github.com/segmentfault/pacman/log"
 )
 
 type AvatarMiddleware struct {
@@ -44,7 +46,7 @@ func (am *AvatarMiddleware) AvatarThumb() gin.HandlerFunc {
 			filePath := fmt.Sprintf("%s/avatar/%s", uploadPath, urlfileName)
 			var avatarfile []byte
 			if size == 0 {
-				avatarfile, err = ioutil.ReadFile(filePath)
+				avatarfile, err = os.ReadFile(filePath)
 			} else {
 				avatarfile, err = am.uploaderService.AvatarThumbFile(ctx, uploadPath, urlfileName, size)
 			}
@@ -52,10 +54,26 @@ func (am *AvatarMiddleware) AvatarThumb() gin.HandlerFunc {
 				ctx.Next()
 				return
 			}
-			ctx.Writer.WriteString(string(avatarfile))
+			ext := strings.ToLower(path.Ext(filePath)[1:])
+			ctx.Header("content-type", fmt.Sprintf("image/%s", ext))
+			_, err = ctx.Writer.WriteString(string(avatarfile))
+			if err != nil {
+				log.Error(err)
+			}
 			ctx.Abort()
 			return
 
+		} else {
+			uUrl, err := url.Parse(u)
+			if err != nil {
+				ctx.Next()
+				return
+			}
+			_, urlfileName := filepath.Split(uUrl.Path)
+			uploadPath := am.serviceConfig.UploadPath
+			filePath := fmt.Sprintf("%s/%s", uploadPath, urlfileName)
+			ext := strings.ToLower(path.Ext(filePath)[1:])
+			ctx.Header("content-type", fmt.Sprintf("image/%s", ext))
 		}
 		ctx.Next()
 	}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -7,37 +7,52 @@ import classNames from 'classnames';
 import { unionBy } from 'lodash';
 import { marked } from 'marked';
 
-import * as Types from '@answer/common/interface';
+import * as Types from '@/common/interface';
+import { Modal } from '@/components';
+import { usePageUsers, useReportModal } from '@/hooks';
+import {
+  matchedUsers,
+  parseUserInfo,
+  scrollToElementTop,
+  bgFadeOut,
+} from '@/utils';
+import { tryNormalLogged } from '@/utils/guard';
 import {
   useQueryComments,
   addComment,
   deleteComment,
   updateComment,
   postVote,
-} from '@answer/api';
-import { Modal } from '@answer/components';
-import { usePageUsers, useReportModal } from '@answer/hooks';
-import { matchedUsers, parseUserInfo, isLogin } from '@answer/utils';
+} from '@/services';
 
 import { Form, ActionBar, Reply } from './components';
 
 import './index.scss';
 
-const Comment = ({ objectId, mode }) => {
+const Comment = ({ objectId, mode, commentId }) => {
   const pageUsers = usePageUsers();
   const [pageIndex, setPageIndex] = useState(0);
-  const [comments, setComments] = useState<any>([]);
   const [visibleComment, setVisibleComment] = useState(false);
   const pageSize = pageIndex === 0 ? 3 : 15;
   const { data, mutate } = useQueryComments({
     object_id: objectId,
+    comment_id: commentId,
     page: pageIndex,
     page_size: pageSize,
   });
+  const [comments, setComments] = useState<any>([]);
 
   const reportModal = useReportModal();
 
   const { t } = useTranslation('translation', { keyPrefix: 'comment' });
+  const scrollCallback = useCallback((el, co) => {
+    if (pageIndex === 0 && co.comment_id === commentId) {
+      setTimeout(() => {
+        scrollToElementTop(el);
+        bgFadeOut(el);
+      }, 100);
+    }
+  }, []);
 
   useEffect(() => {
     if (!data) {
@@ -65,6 +80,9 @@ const Comment = ({ objectId, mode }) => {
   }, [data]);
 
   const handleReply = (id) => {
+    if (!tryNormalLogged(true)) {
+      return;
+    }
     setComments(
       comments.map((item) => {
         if (item.comment_id === id) {
@@ -89,10 +107,14 @@ const Comment = ({ objectId, mode }) => {
   const handleSendReply = (item) => {
     const users = matchedUsers(item.value);
     const userNames = unionBy(users.map((user) => user.userName));
-    const html = marked.parse(parseUserInfo(item.value));
+    const commentMarkDown = parseUserInfo(item.value);
+    const html = marked.parse(commentMarkDown);
+    // if (!commentMarkDown || !html) {
+    //   return;
+    // }
     const params = {
       object_id: objectId,
-      original_text: item.value,
+      original_text: commentMarkDown,
       mention_username_list: userNames,
       parsed_text: html,
       ...(item.type === 'reply'
@@ -103,7 +125,7 @@ const Comment = ({ objectId, mode }) => {
     };
 
     if (item.type === 'edit') {
-      updateComment({
+      return updateComment({
         ...params,
         comment_id: item.comment_id,
       }).then(() => {
@@ -118,30 +140,29 @@ const Comment = ({ objectId, mode }) => {
           }),
         );
       });
-    } else {
-      addComment(params).then((res) => {
-        if (item.type === 'reply') {
-          const index = comments.findIndex(
-            (comment) => comment.comment_id === item.comment_id,
-          );
-          comments[index].showReply = false;
-          comments.splice(index + 1, 0, res);
-          setComments([...comments]);
-        } else {
-          setComments([
-            ...comments.map((comment) => {
-              if (comment.comment_id === item.comment_id) {
-                comment.showReply = false;
-              }
-              return comment;
-            }),
-            res,
-          ]);
-        }
-
-        setVisibleComment(false);
-      });
     }
+    return addComment(params).then((res) => {
+      if (item.type === 'reply') {
+        const index = comments.findIndex(
+          (comment) => comment.comment_id === item.comment_id,
+        );
+        comments[index].showReply = false;
+        comments.splice(index + 1, 0, res);
+        setComments([...comments]);
+      } else {
+        setComments([
+          ...comments.map((comment) => {
+            if (comment.comment_id === item.comment_id) {
+              comment.showReply = false;
+            }
+            return comment;
+          }),
+          res,
+        ]);
+      }
+
+      setVisibleComment(false);
+    });
   };
 
   const handleDelete = (id) => {
@@ -154,16 +175,15 @@ const Comment = ({ objectId, mode }) => {
         deleteComment(id).then(() => {
           if (pageIndex === 0) {
             mutate();
-          } else {
-            setComments(comments.filter((item) => item.comment_id !== id));
           }
+          setComments(comments.filter((item) => item.comment_id !== id));
         });
       },
     });
   };
 
   const handleVote = (id, is_cancel) => {
-    if (!isLogin(true)) {
+    if (!tryNormalLogged(true)) {
       return;
     }
 
@@ -189,7 +209,7 @@ const Comment = ({ objectId, mode }) => {
   };
 
   const handleAction = ({ action }, item) => {
-    if (!isLogin(true)) {
+    if (!tryNormalLogged(true)) {
       return;
     }
     if (action === 'report') {
@@ -222,6 +242,9 @@ const Comment = ({ objectId, mode }) => {
         return (
           <div
             key={item.comment_id}
+            ref={(el) => {
+              scrollCallback(el, item);
+            }}
             className={classNames(
               'border-bottom py-2 comment-item',
               index === 0 && 'border-top',
@@ -238,7 +261,7 @@ const Comment = ({ objectId, mode }) => {
                 onCancel={() => handleCancel(item.comment_id)}
               />
             ) : (
-              <div className="d-flex">
+              <div className="d-block">
                 {item.reply_user_display_name && (
                   <Link to="." className="fs-14 me-1 text-nowrap">
                     @{item.reply_user_display_name}
@@ -246,7 +269,7 @@ const Comment = ({ objectId, mode }) => {
                 )}
 
                 <div
-                  className="fmt fs-14"
+                  className="fmt fs-14 text-break text-wrap"
                   dangerouslySetInnerHTML={{ __html: item.parsed_text }}
                 />
               </div>
@@ -290,7 +313,9 @@ const Comment = ({ objectId, mode }) => {
           variant="link"
           className="p-0 fs-14 btn-no-border"
           onClick={() => {
-            setVisibleComment(!visibleComment);
+            if (tryNormalLogged(true)) {
+              setVisibleComment(!visibleComment);
+            }
           }}>
           {t('btn_add_comment')}
         </Button>

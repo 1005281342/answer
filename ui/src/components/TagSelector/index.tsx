@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary */
 import { FC, useState, useEffect } from 'react';
 import { Dropdown, FormControl, Button, Form } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
@@ -5,9 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { marked } from 'marked';
 import classNames from 'classnames';
 
-import { useTagModal } from '@answer/hooks';
-import { queryTags } from '@answer/api';
-import type * as Type from '@answer/common/interface';
+import { useTagModal } from '@/hooks';
+import type * as Type from '@/common/interface';
+import { queryTags } from '@/services';
 
 import './index.scss';
 
@@ -18,6 +19,7 @@ interface IProps {
   onBlur?: () => void;
   hiddenDescription?: boolean;
   hiddenCreateBtn?: boolean;
+  showRequiredTagText?: boolean;
   alwaysShowAddBtn?: boolean;
 }
 
@@ -31,6 +33,7 @@ const TagSelector: FC<IProps> = ({
   hiddenDescription = false,
   hiddenCreateBtn = false,
   alwaysShowAddBtn = false,
+  showRequiredTagText = false,
 }) => {
   const [initialValue, setInitialValue] = useState<Type.Tag[]>([...value]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -95,17 +98,16 @@ const TagSelector: FC<IProps> = ({
     }
   }, [value]);
 
-  useEffect(() => {
-    if (!tag) {
-      setTags(null);
-      return;
-    }
-
-    queryTags(tag).then((res) => {
+  const fetchTags = (str) => {
+    queryTags(str).then((res) => {
       const tagArray: Type.Tag[] = filterTags(res || []);
       setTags(tagArray);
     });
-  }, [tag]);
+  };
+
+  useEffect(() => {
+    fetchTags(tag);
+  }, [visibleMenu]);
 
   const handleClick = (val: Type.Tag) => {
     const findIndex = initialValue.findIndex(
@@ -143,7 +145,9 @@ const TagSelector: FC<IProps> = ({
   };
 
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTag(e.currentTarget.value.replace(';', ''));
+    const searchStr = e.currentTarget.value.replace(';', '');
+    setTag(searchStr);
+    fetchTags(searchStr);
   };
 
   const handleSelect = (eventKey) => {
@@ -151,6 +155,7 @@ const TagSelector: FC<IProps> = ({
   };
   const handleKeyDown = (e) => {
     e.stopPropagation();
+
     if (!tags) {
       return;
     }
@@ -162,13 +167,20 @@ const TagSelector: FC<IProps> = ({
     if (keyCode === 40 && currentIndex < tags.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
-    if (
-      keyCode === 13 &&
-      currentIndex > -1 &&
-      currentIndex <= tags.length - 1
-    ) {
+
+    if (keyCode === 13 && currentIndex > -1) {
       e.preventDefault();
-      handleClick(tags[currentIndex]);
+
+      if (tags.length === 0) {
+        tagModal.onShow(tag);
+        return;
+      }
+      if (currentIndex <= tags.length - 1) {
+        handleClick(tags[currentIndex]);
+        if (currentIndex === tags.length - 1 && currentIndex > 0) {
+          setCurrentIndex(currentIndex - 1);
+        }
+      }
     }
   };
   return (
@@ -177,16 +189,18 @@ const TagSelector: FC<IProps> = ({
       onFocus={onFocus}
       onBlur={onBlur}
       onKeyDown={handleKeyDown}>
-      <div className="d-flex flex-wrap mx-n1">
+      <div className="d-flex flex-wrap m-n1">
         {initialValue?.map((item, index) => {
           return (
             <Button
               key={item.slug_name}
               className={classNames(
                 'm-1 text-nowrap d-flex align-items-center',
-                index === repeatIndex && 'warning',
+                index === repeatIndex && 'bg-fade-out',
               )}
-              variant="outline-secondary"
+              variant={`outline-${
+                item.reserved ? 'danger' : item.recommend ? 'dark' : 'secondary'
+              }`}
               size="sm">
               {item.slug_name}
               <span className="ms-1" onMouseUp={() => handleRemove(item)}>
@@ -220,6 +234,11 @@ const TagSelector: FC<IProps> = ({
                   </Form>
                 </Dropdown.Header>
               )}
+              {showRequiredTagText &&
+                tags &&
+                tags.filter((v) => v.recommend)?.length > 0 && (
+                  <h6 className="dropdown-header">{t('tag_required_text')}</h6>
+                )}
 
               {tags?.map((item, index) => {
                 return (
@@ -242,7 +261,7 @@ const TagSelector: FC<IProps> = ({
                   variant="link"
                   className="px-3 btn-no-border w-100 text-start"
                   onClick={() => {
-                    tagModal.onShow();
+                    tagModal.onShow(tag);
                   }}>
                   + {t('create_btn')}
                 </Button>

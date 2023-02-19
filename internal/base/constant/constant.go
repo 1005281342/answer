@@ -11,6 +11,9 @@ const (
 	AdminTokenCacheKey         = "answer:admin:token:"
 	AdminTokenCacheTime        = 7 * 24 * time.Hour
 	AcceptLanguageFlag         = "Accept-Language"
+	UserTokenMappingCacheKey   = "answer:user-token:mapping:"
+	SiteInfoCacheKey           = "answer:site-info:"
+	SiteInfoCacheTime          = 1 * time.Hour
 )
 
 const (
@@ -27,6 +30,10 @@ const (
 // object TagID AnswerList
 // key equal database's table name
 var (
+	Version string = ""
+
+	PathIgnoreMap map[string]bool
+
 	ObjectTypeStrMapping = map[string]int{
 		QuestionObjectType:   1,
 		AnswerObjectType:     2,
@@ -47,3 +54,20 @@ var (
 		8: ReportObjectType,
 	}
 )
+
+const (
+	SiteTypeGeneral       = "general"
+	SiteTypeInterface     = "interface"
+	SiteTypeBranding      = "branding"
+	SiteTypeWrite         = "write"
+	SiteTypeLegal         = "legal"
+	SiteTypeSeo           = "seo"
+	SiteTypeLogin         = "login"
+	SiteTypeCustomCssHTML = "css-html"
+	SiteTypeTheme         = "theme"
+)
+
+func ExistInPathIgnore(name string) bool {
+	_, ok := PathIgnoreMap[name]
+	return ok
+}

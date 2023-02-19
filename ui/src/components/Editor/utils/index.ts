@@ -1,6 +1,5 @@
 import type { Editor, Position } from 'codemirror';
 import type CodeMirror from 'codemirror';
-// import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
 
 export function createEditorUtils(
@@ -114,9 +113,20 @@ export function htmlRender(el: HTMLElement | null) {
       });
     },
   );
-  // import('highlight.js').then(({ default: highlight }) => {
-  //   el.querySelectorAll('pre code').forEach((code) => {
-  //     highlight.highlightElement(code as HTMLElement);
-  //   });
-  // });
+
+  el.querySelectorAll('table').forEach((table) => {
+    if (
+      (table.parentNode as HTMLDivElement)?.classList.contains(
+        'table-responsive',
+      )
+    ) {
+      return;
+    }
+
+    table.classList.add('table', 'table-bordered');
+    const div = document.createElement('div');
+    div.className = 'table-responsive';
+    table.parentNode?.replaceChild(div, table);
+    div.appendChild(table);
+  });
 }

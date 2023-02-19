@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
 	"xorm.io/builder"
 
 	"github.com/answerdev/answer/internal/base/constant"
@@ -102,6 +103,16 @@ func (ar *answerRepo) GetAnswer(ctx context.Context, id string) (
 	return
 }
 
+// GetQuestionCount
+func (ar *answerRepo) GetAnswerCount(ctx context.Context) (count int64, err error) {
+	list := make([]*entity.Answer, 0)
+	count, err = ar.data.DB.Where("status = ?", entity.AnswerStatusAvailable).FindAndCount(&list)
+	if err != nil {
+		return count, errors.InternalServer(reason.DatabaseError).WithError(err).WithStack()
+	}
+	return
+}
+
 // GetAnswerList get answer list all
 func (ar *answerRepo) GetAnswerList(ctx context.Context, answer *entity.Answer) (answerList []*entity.Answer, err error) {
 	answerList = make([]*entity.Answer, 0)
@@ -122,22 +133,22 @@ func (ar *answerRepo) GetAnswerPage(ctx context.Context, page, pageSize int, ans
 	return
 }
 
-// UpdateAdopted
+// UpdateAccepted
 // If no answer is selected, the answer id can be 0
-func (ar *answerRepo) UpdateAdopted(ctx context.Context, id string, questionID string) error {
+func (ar *answerRepo) UpdateAccepted(ctx context.Context, id string, questionID string) error {
 	if questionID == "" {
 		return nil
 	}
 	var data entity.Answer
 	data.ID = id
 
-	data.Adopted = schema.AnswerAdoptedFailed
+	data.Accepted = schema.AnswerAcceptedFailed
 	_, err := ar.data.DB.Where("question_id =?", questionID).Cols("adopted").Update(&data)
 	if err != nil {
 		return err
 	}
 	if id != "0" {
-		data.Adopted = schema.AnswerAdoptedEnable
+		data.Accepted = schema.AnswerAcceptedEnable
 		_, err = ar.data.DB.Where("id = ?", id).Cols("adopted").Update(&data)
 		if err != nil {
 			return errors.InternalServer(reason.DatabaseError).WithError(err).WithStack()
@@ -193,7 +204,7 @@ func (ar *answerRepo) SearchList(ctx context.Context, search *entity.AnswerSearc
 	case entity.AnswerSearchOrderByVote:
 		session = session.OrderBy("vote_count desc")
 	default:
-		session = session.OrderBy("adopted desc,vote_count desc")
+		session = session.OrderBy("adopted desc,vote_count desc,created_at asc")
 	}
 	session = session.And("status = ?", entity.AnswerStatusAvailable)
 
@@ -205,7 +216,7 @@ func (ar *answerRepo) SearchList(ctx context.Context, search *entity.AnswerSearc
 	return rows, count, nil
 }
 
-func (ar *answerRepo) CmsSearchList(ctx context.Context, search *entity.CmsAnswerSearch) ([]*entity.Answer, int64, error) {
+func (ar *answerRepo) AdminSearchList(ctx context.Context, search *entity.AdminAnswerSearch) ([]*entity.Answer, int64, error) {
 	var (
 		count   int64
 		err     error

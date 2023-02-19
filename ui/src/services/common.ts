@@ -1,15 +1,16 @@
 import qs from 'qs';
 import useSWR from 'swr';
 
-import request from '@answer/utils/request';
-import type * as Type from '@answer/common/interface';
+import request from '@/utils/request';
+import type * as Type from '@/common/interface';
 
-export const uploadImage = (file) => {
+export const uploadImage = (params: { file: File; type: Type.UploadType }) => {
   const form = new FormData();
-
-  form.append('file', file);
-  return request.post('/answer/api/v1/user/post/file', form);
+  form.append('source', String(params.type));
+  form.append('file', params.file);
+  return request.post('/answer/api/v1/file', form);
 };
+
 export const useQueryQuestionByTitle = (title) => {
   return useSWR<Record<string, any>>(
     title ? `/answer/api/v1/question/similar?title=${title}` : '',
@@ -18,12 +19,18 @@ export const useQueryQuestionByTitle = (title) => {
 };
 
 export const useQueryTags = (params) => {
-  return useSWR<Type.ListResult>(
+  const { data, error, mutate } = useSWR<Type.ListResult>(
     `/answer/api/v1/tags/page?${qs.stringify(params, {
       skipNulls: true,
     })}`,
     request.instance.get,
   );
+  return {
+    data,
+    isLoading: !data && !error,
+    error,
+    mutate,
+  };
 };
 
 export const useQueryRevisions = (object_id: string | undefined) => {
@@ -37,6 +44,9 @@ export const useQueryComments = (params) => {
   if (params.page === 0) {
     params.query_cond = 'vote';
     params.page = 1;
+  } else {
+    // only first page need commentId
+    delete params.comment_id;
   }
   return useSWR<Type.ListResult>(
     `/answer/api/v1/comment/page?${qs.stringify(params, {
@@ -72,7 +82,7 @@ export const useQueryAnswerInfo = (id: string) => {
 };
 
 export const modifyQuestion = (
-  params: Type.QuestionParams & { id: string },
+  params: Type.QuestionParams & { id: string; edit_summary: string },
 ) => {
   return request.put(`/answer/api/v1/question`, params);
 };
@@ -90,6 +100,11 @@ export const login = (params: Type.LoginReqParams) => {
 
 export const register = (params: Type.RegisterReqParams) => {
   return request.post<any>('/answer/api/v1/user/register/email', params);
+};
+
+export const getRegisterCaptcha = () => {
+  const apiUrl = '/answer/api/v1/user/register/captcha';
+  return request.get(apiUrl);
 };
 
 export const logout = () => {
@@ -115,7 +130,7 @@ export const resendEmail = (params?: Type.ImgCodeReq) => {
  * @description get login userinfo
  * @returns {UserInfo}
  */
-export const getUserInfo = () => {
+export const getLoggedUserInfo = () => {
   return request.get<Type.UserInfoRes>('/answer/api/v1/user/info');
 };
 
@@ -125,10 +140,6 @@ export const modifyPassword = (params: Type.ModifyPasswordReq) => {
 
 export const modifyUserInfo = (params: Type.ModifyUserReq) => {
   return request.put('/answer/api/v1/user/info', params);
-};
-
-export const uploadAvatar = (params: Type.AvatarUploadReq) => {
-  return request.post('/answer/api/v1/user/avatar/upload', params);
 };
 
 export const resetPassword = (params: Type.PasswordResetReq) => {
@@ -161,14 +172,6 @@ export const questionDetail = (id: string) => {
   return request.get<Type.QuestionDetailRes>(
     `/answer/api/v1/question/info?id=${id}`,
   );
-};
-
-export const langConfig = () => {
-  return request.get('/answer/api/v1/language/config');
-};
-
-export const languages = () => {
-  return request.get<Type.LangsType[]>('/answer/api/v1/language/options');
 };
 
 export const getAnswers = (params: Type.AnswersReq) => {
@@ -253,16 +256,20 @@ export const changeEmailVerify = (params: { code: string }) => {
   return request.put('/answer/api/v1/user/email', params);
 };
 
-export const useSiteSettings = () => {
-  const apiUrl = `/answer/api/v1/siteinfo`;
-  const { data, error } = useSWR<Type.SiteSettings, Error>(
-    [apiUrl],
-    request.instance.get,
-  );
+export const getAppSettings = () => {
+  return request.get<Type.SiteSettings>('/answer/api/v1/siteinfo');
+};
 
-  return {
-    data,
-    isLoading: !data && !error,
-    error,
-  };
+export const reopenQuestion = (params: { question_id: string }) => {
+  return request.put('/answer/api/v1/question/reopen', params);
+};
+
+export const unsubscribe = (code: string) => {
+  const apiUrl = '/answer/api/v1/user/email/notification';
+  return request.put(apiUrl, { code });
+};
+
+export const markdownToHtml = (content: string) => {
+  const apiUrl = '/answer/api/v1/post/render';
+  return request.post(apiUrl, { content });
 };
