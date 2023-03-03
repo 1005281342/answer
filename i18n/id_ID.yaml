@@ -2,237 +2,244 @@
 backend:
   base:
     success:
-      other: "Sukses."
+      other: Sukses.
     unknown:
-      other: "Kesalahan tidak diketahui."
+      other: Kesalahan tidak diketahui.
     request_format_error:
-      other: "Permintaan tidak sah."
+      other: Permintaan tidak sah.
     unauthorized_error:
-      other: "Tidak diizinkan."
+      other: Tidak diizinkan.
     database_error:
-      other: "Kesalahan data server."
+      other: Kesalahan data server.
   role:
     name:
       user:
-        other: "Pengguna"
+        other: Pengguna
       admin:
-        other: "Admin"
+        other: Admin
       moderator:
-        other: "Moderator"
+        other: Moderator
     description:
       user:
-        other: "Default tanpa akses khusus."
+        other: Default tanpa akses khusus.
       admin:
-        other: "Memiliki hak penuh untuk mengakses website."
+        other: Memiliki hak penuh untuk mengakses website.
       moderator:
-        other: "Memiliki hak penuh pada semua pertanyaan, kecuali pengaturan Admin."
+        other: Memiliki hak penuh pada semua pertanyaan, kecuali pengaturan Admin.
   email:
-    other: "Email"
+    other: Email
   password:
-    other: "Password"
+    other: Password
   email_or_password_wrong_error:
-    other: "Email dan kata sandi tidak cocok."
+    other: Email dan kata sandi tidak cocok.
   error:
     admin:
       email_or_password_wrong:
         other: Email dan kata sandi tidak cocok.
     answer:
       not_found:
-        other: "Jawaban tidak ditemukan."
+        other: Jawaban tidak ditemukan.
       cannot_deleted:
-        other: "Tidak memiliki izin untuk menghapus."
+        other: Tidak memiliki izin untuk menghapus.
       cannot_update:
-        other: "Tidak memiliki izin untuk memperbaharui."
+        other: Tidak memiliki izin untuk memperbaharui.
     comment:
       edit_without_permission:
-        other: "Komentar tidak boleh diedit."
+        other: Komentar tidak boleh diedit.
       not_found:
-        other: "Komentar tidak ditemukan."
+        other: Komentar tidak ditemukan.
+      cannot_edit_after_deadline:
+        other: The comment time has been too long to modify.
     email:
       duplicate:
-        other: "Email telah terdaftar."
+        other: Email telah terdaftar.
       need_to_be_verified:
-        other: "Email harus terverifikasi."
+        other: Email harus terverifikasi.
       verify_url_expired:
-        other: "URL verifikasi email telah kadaluwarsa, silahkan kirim ulang."
+        other: URL verifikasi email telah kadaluwarsa, silahkan kirim ulang.
     lang:
       not_found:
-        other: "Bahasa tidak ditemukan."
+        other: Bahasa tidak ditemukan.
     object:
       captcha_verification_failed:
-        other: "Captcha salah."
+        other: Captcha salah.
       disallow_follow:
-        other: "Anda tidak diizinkan untuk mengikuti."
+        other: Anda tidak diizinkan untuk mengikuti.
       disallow_vote:
-        other: "Anda tidak diizinkan untuk melakukan voring."
+        other: Anda tidak diizinkan untuk melakukan voring.
       disallow_vote_your_self:
-        other: "Anda tidak dapat melakukan voting untuk ulasan Anda sendiri."
+        other: Anda tidak dapat melakukan voting untuk ulasan Anda sendiri.
       not_found:
-        other: "Objek tidak ditemukan."
+        other: Objek tidak ditemukan.
       verification_failed:
-        other: "Verifikasi gagal."
+        other: Verifikasi gagal.
       email_or_password_incorrect:
-        other: "Email dan kata sandi tidak cocok."
+        other: Email dan kata sandi tidak cocok.
       old_password_verification_failed:
-        other: "Verifikasi password lama, gagal"
+        other: Verifikasi password lama, gagal
       new_password_same_as_previous_setting:
-        other: "Password baru sama dengan password yang sebelumnya."
+        other: Password baru sama dengan password yang sebelumnya.
     question:
       not_found:
-        other: "Pertanyaan tidak ditemukan."
+        other: Pertanyaan tidak ditemukan.
       cannot_deleted:
-        other: "Tidak memiliki izin untuk menghapus."
+        other: Tidak memiliki izin untuk menghapus.
       cannot_close:
-        other: "Tidak memiliki izin untuk menutup."
+        other: Tidak memiliki izin untuk menutup.
       cannot_update:
-        other: "Tidak memiliki izin untuk memperbaharui."
+        other: Tidak memiliki izin untuk memperbaharui.
     rank:
       fail_to_meet_the_condition:
-        other: "Peringkat gagal memenuhi syarat."
+        other: Peringkat gagal memenuhi syarat.
     report:
       handle_failed:
-        other: "Laporan penanganan gagal."
+        other: Laporan penanganan gagal.
       not_found:
-        other: "Laporan tidak ditemukan."
+        other: Laporan tidak ditemukan.
     tag:
       not_found:
-        other: "Tag tidak ditemukan."
+        other: Tag tidak ditemukan.
       recommend_tag_not_found:
-        other: "Tag rekomendasi tidak ada."
+        other: Tag rekomendasi tidak ada.
       recommend_tag_enter:
-        other: "Silahkan isi setidaknya satu tag yang diperlukan."
+        other: Silahkan isi setidaknya satu tag yang diperlukan.
       not_contain_synonym_tags:
-        other: "Tidak boleh mengandung Tag sinonim."
+        other: Tidak boleh mengandung Tag sinonim.
       cannot_update:
-        other: "Tidak memiliki izin untuk memperbaharui."
+        other: Tidak memiliki izin untuk memperbaharui.
+      is_used_cannot_delete:
+        other: You cannot delete a tag that is in use
       cannot_set_synonym_as_itself:
-        other: "Anda tidak bisa menetapkan sinonim dari tag saat ini dengan tag yang sama."
+        other: Anda tidak bisa menetapkan sinonim dari tag saat ini dengan tag yang sama.
     smtp:
       config_from_name_cannot_be_email:
-        other: "Nama Pengguna tidak bisa menjadi alamat email."
+        other: Nama Pengguna tidak bisa menjadi alamat email.
     theme:
       not_found:
-        other: "Tema tidak ditemukan."
+        other: Tema tidak ditemukan.
     revision:
       review_underway:
-        other: "Tidak dapat mengedit saat ini, sedang ada review versi pada antrian."
+        other: Tidak dapat mengedit saat ini, sedang ada review versi pada antrian.
       no_permission:
-        other: "Tidak memiliki izin untuk merevisi."
+        other: Tidak memiliki izin untuk merevisi.
     user:
       email_or_password_wrong:
         other:
           other: Email dan kata sandi tidak cocok.
       not_found:
-        other: "Pengguna tidak ditemukan."
+        other: Pengguna tidak ditemukan.
       suspended:
-        other: "Pengguna ini telah ditangguhkan."
+        other: Pengguna ini telah ditangguhkan.
       username_invalid:
-        other: "Nama pengguna tidak valid."
+        other: Nama pengguna tidak valid.
       username_duplicate:
-        other: "Nama pengguna sudah digunakan."
+        other: Nama pengguna sudah digunakan.
       set_avatar:
-        other: "Set avatar gagal."
+        other: Set avatar gagal.
       cannot_update_your_role:
-        other: "Anda tidak dapat memodifikasi role anda sendiri."
+        other: Anda tidak dapat memodifikasi role anda sendiri.
       not_allowed_registration:
-        other: "Website tidak membuka pendaftaran baru untuk saat ini"
+        other: Website tidak membuka pendaftaran baru untuk saat ini
     config:
       read_config_failed:
-        other: "Gagal membaca konfigurasi"
+        other: Gagal membaca konfigurasi
     database:
       connection_failed:
-        other: "Koneksi ke database gagal"
+        other: Koneksi ke database gagal
       create_table_failed:
-        other: "Gagal membuat tabel"
+        other: Gagal membuat tabel
     install:
       create_config_failed:
-        other: "Tidak dapat membuat konfigurasi pada file .YAML."
+        other: Can't create the config.yaml file.
+    upload:
+      unsupported_file_format:
+        other: Unsupported file format.
   report:
     spam:
       name:
-        other: "Spam"
+        other: Spam
       desc:
-        other: "Posting ini adalah iklan, atau vandalisme. Tidak berguna atau relevan dengan topik saat ini."
+        other: Posting ini adalah iklan, atau vandalisme. Tidak berguna atau relevan dengan topik saat ini.
     rude:
       name:
-        other: "kasar atau kejam"
+        other: kasar atau kejam
       desc:
-        other: "Orang yang berakal sehat akan menganggap konten ini tidak pantas untuk wacana yang terhormat."
+        other: Orang yang berakal sehat akan menganggap konten ini tidak pantas untuk wacana yang terhormat.
     duplicate:
       name:
-        other: "Duplikat"
+        other: Duplikat
       desc:
-        other: "Pertanyaan ini telah ditanyakan sebelumnya dan sudah ada jawabannya."
+        other: Pertanyaan ini telah ditanyakan sebelumnya dan sudah ada jawabannya.
     not_answer:
       name:
-        other: "bukan jawaban"
+        other: bukan jawaban
       desc:
-        other: "Ini diposting sebagai jawaban, tetapi tidak menjawab pertanyaan. Itu mungkin berupa suntingan, komentar, pertanyaan lain, atau telah dihapus sepenuhnya."
+        other: Ini diposting sebagai jawaban, tetapi tidak menjawab pertanyaan. Itu mungkin berupa suntingan, komentar, pertanyaan lain, atau telah dihapus sepenuhnya.
     not_need:
       name:
-        other: "tidak Dibutuhkan Lagi"
+        other: tidak Dibutuhkan Lagi
       desc:
-        other: "Komentar ini kedaluwarsa, sesuai percakapan, atau tidak relevan dengan postingan ini."
+        other: Komentar ini kedaluwarsa, sesuai percakapan, atau tidak relevan dengan postingan ini.
     other:
       name:
-        other: "lainnya"
+        other: lainnya
       desc:
-        other: "Posting ini membutuhkan perhatian staf karena alasan lain yang tidak tercantum di atas."
+        other: Posting ini membutuhkan perhatian staf karena alasan lain yang tidak tercantum di atas.
   question:
     close:
       duplicate:
         name:
-          other: "spam"
+          other: spam
         desc:
-          other: "Pertanyaan ini telah ditanyakan sebelumnya dan sudah ada jawabannya."
+          other: Pertanyaan ini telah ditanyakan sebelumnya dan sudah ada jawabannya.
       guideline:
         name:
-          other: "a community-specific reason"
+          other: a community-specific reason
         desc:
-          other: "Pertanyaan ini tidak sesuai dengan pedoman komunitas."
+          other: Pertanyaan ini tidak sesuai dengan pedoman komunitas.
       multiple:
         name:
-          other: "membutuhkan detail atau kejelasan"
+          other: membutuhkan detail atau kejelasan
         desc:
-          other: "Pertanyaan ini mencakup beberapa pertanyaan pada satu post. Pertanyaan harus fokus pada satu masalah saja."
+          other: Pertanyaan ini mencakup beberapa pertanyaan pada satu post. Pertanyaan harus fokus pada satu masalah saja.
       other:
         name:
-          other: "lainnya"
+          other: lainnya
         desc:
-          other: "Posting ini membutuhkan alasan lain yang tidak tercantum di atas."
+          other: Posting ini membutuhkan alasan lain yang tidak tercantum di atas.
     operation_type:
       asked:
-        other: "ditanyakan"
+        other: ditanyakan
       answered:
-        other: "dijawab"
+        other: dijawab
       modified:
-        other: "dimodifikasi"
+        other: dimodifikasi
   notification:
     action:
       update_question:
-        other: "pertanyaan yang diperbaharui"
+        other: pertanyaan yang diperbaharui
       answer_the_question:
-        other: "pertanyaan yang dijawab"
+        other: pertanyaan yang dijawab
       update_answer:
-        other: "jawaban yang diperbaharui"
+        other: jawaban yang diperbaharui
       accept_answer:
-        other: "pertanyaan yanag diterima"
+        other: pertanyaan yanag diterima
       comment_question:
-        other: "pertanyaan yang dikomentari"
+        other: pertanyaan yang dikomentari
       comment_answer:
-        other: "jawaban yang dikomentari"
+        other: jawaban yang dikomentari
       reply_to_you:
-        other: "membalas Anda"
+        other: membalas Anda
       mention_you:
-        other: "menyebutmu"
+        other: menyebutmu
       your_question_is_closed:
-        other: "Pertanyaanmu telah ditutup"
+        other: Pertanyaanmu telah ditutup
       your_question_was_deleted:
-        other: "Pertanyaanmu telah dihapus"
+        other: Pertanyaanmu telah dihapus
       your_answer_was_deleted:
-        other: "Jawabanmu telah dihapus"
+        other: Jawabanmu telah dihapus
       your_comment_was_deleted:
-        other: "Komentarmu telah dihapus"
+        other: Komentarmu telah dihapus
 #The following fields are used for interface presentation(Front-end)
 ui:
   how_to_format:
@@ -304,7 +311,7 @@ ui:
             msg:
               empty: Code tidak boleh kosong.
           language:
-            label: Bahasa (opsional)
+            label: Language
             placeholder: Deteksi otomatis
       btn_cancel: Batal
       btn_confirm: Tambah
@@ -340,7 +347,7 @@ ui:
               only_image: Hanya file Gambar yang diperbolehkan.
               max_size: Ukuran file tidak boleh melebihi 4MB.
           desc:
-            label: Deskripsi (opsional)
+            label: Description
       tab_url: URL gambar
       form_url:
         fields:
@@ -349,7 +356,7 @@ ui:
             msg:
               empty: URL gambar tidak boleh kosong.
           name:
-            label: Deskripsi (opsional)
+            label: Description
       btn_cancel: Batal
       btn_confirm: Tambah
       uploading: Sedang mengunggah
@@ -369,7 +376,7 @@ ui:
             msg:
               empty: URL cannot be empty.
           name:
-            label: Description (optional)
+            label: Description
       btn_cancel: Batal
       btn_confirm: Tambah
     ordered_list:
@@ -417,7 +424,7 @@ ui:
             range: URL slug up to 35 characters.
             character: URL slug contains unallowed character set.
         desc:
-          label: Description (optional)
+          label: Description
     btn_cancel: Cancel
     btn_submit: Submit
   tag_info:
@@ -434,9 +441,11 @@ ui:
     synonyms_text: Tag berikut akan dipetakan ulang ke
     delete:
       title: Hapus tagar ini
-      content: >-
-        <p>We do not allowed deleting tag with posts.</p><p>Please remove this tag from the posts first.</p>
-      content2: Anda yakin ingin menghapusnya?
+      tip_with_posts: >-
+        <p>We do not allowed <strong>deleting tag with posts</strong>.</p> <p>Please remove this tag from the posts first.</p>
+      tip_with_synonyms: >-
+        <p>We do not allowed <strong>deleting tag with synonyms</strong>.</p> <p>Please remove the synonyms from this tag first.</p>
+      tip: Are you sure you wish to delete?
       close: Tutup
   edit_tag:
     title: Ubah Tag
@@ -477,7 +486,7 @@ ui:
     btn_flag: Flag
     btn_save_edits: Simpan suntingan
     btn_cancel: Batal
-    show_more: Tampilkan lebih banyak komentar
+    show_more: Show more comments
     tip_question: >-
       Gunakan komentar untuk meminta informasi lebih lanjut atau menyarankan perbaikan. Hindari menjawab pertanyaan di komentar.
     tip_answer: >-
@@ -491,6 +500,8 @@ ui:
           label: Revisi
         answer:
           label: Jawaban
+          feedback:
+            characters: content must be at least 6 characters in length.
         edit_summary:
           label: Sunting ringkasan
           placeholder: >-
@@ -615,7 +626,7 @@ ui:
       msg:
         empty: Email tidak boleh kosong.
   change_email:
-    page_title: Selamat datang di Answer
+    page_title: Welcome to {{site_name}}
     btn_cancel: Batal
     btn_update: Perbarui alamat email
     send_success: >-
@@ -653,12 +664,12 @@ ui:
       display_name:
         label: Display Name
         msg: Display name cannot be empty.
-        msg_range: Display name up to 30 characters
+        msg_range: Display name up to 30 characters.
       username:
         label: Username
         caption: People can mention you as "@username".
         msg: Username cannot be empty.
-        msg_range: Username up to 30 characters
+        msg_range: Username up to 30 characters.
         character: 'Must use the character set "a-z", "0-9", " - . _"'
       avatar:
         label: Profile Image
@@ -670,13 +681,13 @@ ui:
         default: System
         msg: Please upload an avatar
       bio:
-        label: About Me (optional)
+        label: About Me
       website:
-        label: Website (optional)
+        label: Website
         placeholder: "https://example.com"
         msg: Website incorrect format
       location:
-        label: Location (optional)
+        label: Location
         placeholder: "City, Country"
     notification:
       heading: Notifications
@@ -744,6 +755,7 @@ ui:
       confirm_info: >-
         <p>Yakin ingin menambahkan jawaban lain?</p><p>Sebagai gantinya, Anda dapat menggunakan tautan edit untuk menyaring dan menyempurnakan jawaban anda.</p>
       empty: Jawaban tidak boleh kosong.
+      characters: content must be at least 6 characters in length.
     reopen:
       title: Buka kembali postingan ini
       content: Kamu yakin ingin membuka kembali?
@@ -804,7 +816,7 @@ ui:
   modal_confirm:
     title: Error...
   account_result:
-    page_title: Welcome to Answer
+    page_title: Welcome to {{site_name}}
     success: Your new account is confirmed; you will be redirected to the home page.
     link: Continue to homepage
     invalid: >-
@@ -815,7 +827,7 @@ ui:
   unsubscribe:
     page_title: Unsubscribe
     success_title: Unsubscribe Successful
-    success_desc: You have been successfully removed from this subscriber list and won’t receive any further emails from us.
+    success_desc: You have been successfully removed from this subscriber list and won't receive any further emails from us.
     link: Change settings
   question:
     following_tags: Following Tags
@@ -877,7 +889,7 @@ ui:
     title: Jawaban
     next: Selanjutnya
     done: Selesai
-    config_yaml_error: Tidak dapat membuat konfigurasi file .yaml
+    config_yaml_error: Can't create the config.yaml file.
     lang:
       label: Silakan pilih Bahasa
     db_type:
@@ -907,7 +919,7 @@ ui:
       label: The config.yaml file created.
       desc: >-
         You can create the <1>config.yaml</1> file manually in the <1>/var/wwww/xxx/</1> directory and paste the following text into it.
-      info: "After you’ve done that, click “Next” button."
+      info: After you've done that, click "Next" button.
     site_information: Site Information
     admin_account: Admin Account
     site_name:
@@ -952,7 +964,12 @@ ui:
       You appear to have already installed. To reinstall please clear your old database tables first.
     db_failed: Koneksi ke database gagal
     db_failed_desc: >-
-      Ini berarti bahwa informasi database dalam file <1>config.yaml</1> Anda salah atau koneksi ke server database tidak dapat dilakukan. Ini bisa berarti server database Anda sedang down.
+      This either means that the database information in your <1>config.yaml</1> file is incorrect or that contact with the database server could not be established. This could mean your host’s database server is down.
+  counts:
+    views: views
+    votes: votes
+    answers: answers
+    accepted: Accepted
   page_404:
     desc: "Sayangnya, halaman ini tidak ada."
     back_home: Kembali ke beranda
@@ -960,7 +977,7 @@ ui:
     desc: Server mengalami kesalahan internal dan tidak dapat menyelesaikan permintaan Anda.
     back_home: Kembali ke beranda
   page_maintenance:
-    desc: "Sedang dalam perbaikan, akan kembali secepatnya."
+    desc: "We are under maintenance, we'll be back soon."
   nav_menus:
     dashboard: Dasbor
     contents: Konten
@@ -1094,7 +1111,7 @@ ui:
             password:
               label: Password
               text: Pengguna akan keluar dan harus masuk lagi.
-              msg: Panjang kata sandi minimal 8 - 32 karakter.
+              msg: Password must be at 8-32 characters in length.
         btn_cancel: Batal
         btn_submit: Kirim
       user_modal:
@@ -1103,13 +1120,13 @@ ui:
           fields:
             display_name:
               label: Nama
-              msg: panjang nama minimal 4 - 30 karakter.
+              msg: Display Name must be at 3-30 characters in length.
             email:
               label: Email
               msg: Email tidak sah.
             password:
               label: Kata sandi
-              msg: Panjang kata sandi minimal 8 - 32 karakter.
+              msg: Password must be at 8-32 characters in length.
         btn_cancel: Batal
         btn_submit: Kirim
     questions:
@@ -1150,11 +1167,11 @@ ui:
         validate: Please enter a valid URL.
         text: The address of your site.
       short_desc:
-        label: Short Site Description (optional)
+        label: Short Site Description
         msg: Short site description cannot be empty.
         text: "Short description, as used in the title tag on homepage."
       desc:
-        label: Site Description (optional)
+        label: Site Description
         msg: Site description cannot be empty.
         text: "Describe this site in one sentence, as used in the meta description tag."
       contact_email:
@@ -1164,14 +1181,6 @@ ui:
         text: Email address of key contact responsible for this site.
     interface:
       page_title: Interface
-      logo:
-        label: Logo (optional)
-        msg: Site logo cannot be empty.
-        text: You can upload your image or <1>reset</1> it to the site title text.
-      theme:
-        label: Theme
-        msg: Theme cannot be empty.
-        text: Select an existing theme.
       language:
         label: Interface Language
         msg: Interface language cannot be empty.
@@ -1223,19 +1232,19 @@ ui:
     branding:
       page_title: Branding
       logo:
-        label: Logo (optional)
+        label: Logo
         msg: Logo cannot be empty.
         text: The logo image at the top left of your site. Use a wide rectangular image with a height of 56 and an aspect ratio greater than 3:1. If left blank, the site title text will be shown.
       mobile_logo:
-        label: Mobile Logo (optional)
-        text: The logo used on mobile version of your site. Use a wide rectangular image with a height of 56. If left blank, the image from the “logo” setting will be used.
+        label: Mobile Logo
+        text: The logo used on mobile version of your site. Use a wide rectangular image with a height of 56. If left blank, the image from the "logo" setting will be used.
       square_icon:
-        label: Square Icon (optional)
+        label: Square Icon
         msg: Square icon cannot be empty.
         text: Image used as the base for metadata icons. Should ideally be larger than 512x512.
       favicon:
-        label: Favicon (optional)
-        text: A favicon for your site. To work correctly over a CDN it must be a png. Will be resized to 32x32. If left blank, “square icon” will be used.
+        label: Favicon
+        text: A favicon for your site. To work correctly over a CDN it must be a png. Will be resized to 32x32. If left blank, "square icon" will be used.
     legal:
       page_title: Legal
       terms_of_service:
@@ -1300,6 +1309,7 @@ ui:
         label: Login required
         text: Only logged in users can access this community.
   form:
+    optional: (optional)
     empty: cannot be empty
     invalid: is invalid
     btn_submit: Save
@@ -1349,5 +1359,7 @@ ui:
     staffs: Our community staff
     reputation: reputation
     votes: votes
-
+  prompt:
+    leave_page: "Are you sure you want to leave the page?"
+    changes_not_save: "Your changes may not be saved."
 

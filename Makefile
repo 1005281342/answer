@@ -1,6 +1,6 @@
 .PHONY: build clean ui
 
-VERSION=1.0.4
+VERSION=1.0.5
 BIN=answer
 DIR_SRC=./cmd/answer
 DOCKER_CMD=docker
@@ -44,6 +44,6 @@ install-ui-packages:
 
 
 ui:
-	@cd ui && pnpm install && pnpm build && sed -i 's/%AnswerVersion%/'$(VERSION)'/g' ./build/index.html && cd -
+	@cd ui && pnpm install && pnpm build && cd -
 
 all: clean build
